@@ -25,6 +25,7 @@ class TodoState extends ChangeNotifier {
     addListener(rebuildPage);
   }
 
+  /// With ValueNotifier, each item can have its own listeners
   final List<ValueNotifier<TodoModel>> _todoModelList = [];
   List<ValueNotifier<TodoModel>> get todoModelList => _todoModelList;
 
@@ -36,6 +37,7 @@ class TodoState extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Every widget has a unique hash code, so it cane be used as an ID
   void remove(int hashCode) {
     _todoModelList.removeWhere((todo) => todo.hashCode == hashCode);
     notifyListeners();
