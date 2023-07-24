@@ -5,8 +5,6 @@ import 'package:get_it_example/todo.dart';
 GetIt getIt = GetIt.instance;
 
 void main() {
-  getIt.registerSingleton<TodoState>(TodoState());
-
   runApp(const MyApp());
 }
 
@@ -31,9 +29,19 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   final TextEditingController textEditingController = TextEditingController();
   @override
+  void initState() {
+    super.initState();
+    getIt.registerSingleton<TodoState>(TodoState(rebuildPage: rebuildWidget));
+  }
+
+  @override
   void dispose() {
     textEditingController.dispose();
     super.dispose();
+  }
+
+  void rebuildWidget() {
+    setState(() {});
   }
 
   @override
@@ -43,7 +51,7 @@ class _MyHomePageState extends State<MyHomePage> {
     return ListenableBuilder(
       listenable: todoState,
       builder: (context, child) {
-        List<TodoModel> todoList = todoState.todoModelList;
+        final todoList = todoState.todoModelList;
         return Scaffold(
           appBar: AppBar(),
           body: Column(
@@ -61,34 +69,12 @@ class _MyHomePageState extends State<MyHomePage> {
                 child: ListView.builder(
                   itemCount: todoList.length,
                   itemBuilder: (BuildContext context, int index) {
-                    TodoModel todo = todoList[index];
-                    return ListTile(
-                      title: Text(todo.text),
-                      leading: Icon(
-                        todo.completed
-                            ? Icons.check_box
-                            : Icons.check_box_outline_blank,
-                      ),
-                      trailing: IntrinsicWidth(
-                        child: Row(
-                          children: [
-                            IconButton(
-                              onPressed: () {
-                                todoState.edit(
-                                  id: todo.id,
-                                  text: textEditingController.text,
-                                );
-                              },
-                              icon: const Icon(Icons.edit),
-                            ),
-                            TextButton(
-                              onPressed: () => todoState.remove(todo.id),
-                              child: const Text('Delete'),
-                            ),
-                          ],
-                        ),
-                      ),
-                      onTap: () => todoState.toggle(todo.id),
+                    final todo = todoList[index];
+                    return TodoRow(
+                      key: UniqueKey(),
+                      todo: todo,
+                      textEditingController: textEditingController,
+                      onRemove: () => todoState.remove(todo.hashCode),
                     );
                   },
                 ),
@@ -103,6 +89,67 @@ class _MyHomePageState extends State<MyHomePage> {
           ),
         );
       },
+    );
+  }
+}
+
+class TodoRow extends StatefulWidget {
+  const TodoRow({
+    super.key,
+    required this.todo,
+    required this.textEditingController,
+    required this.onRemove,
+  });
+
+  final ValueNotifier<TodoModel> todo;
+  final TextEditingController textEditingController;
+  final void Function() onRemove;
+
+  @override
+  State<TodoRow> createState() => _TodoRowState();
+}
+
+class _TodoRowState extends State<TodoRow> {
+  @override
+  void initState() {
+    super.initState();
+    widget.todo.addListener(rebuild);
+  }
+
+  @override
+  void dispose() {
+    widget.todo.removeListener(rebuild);
+    super.dispose();
+  }
+
+  void rebuild() {
+    setState(() {});
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      title: Text(widget.todo.value.text),
+      leading: Icon(
+        widget.todo.value.completed ? Icons.check_box : Icons.check_box_outline_blank,
+      ),
+      trailing: IntrinsicWidth(
+        child: Row(
+          children: [
+            IconButton(
+              onPressed: () {
+                widget.todo.value = widget.todo.value.copyWith(text: widget.textEditingController.text);
+              },
+              icon: const Icon(Icons.edit),
+            ),
+            TextButton(
+              onPressed: widget.onRemove,
+              child: const Text('Delete'),
+            ),
+          ],
+        ),
+      ),
+      onTap: () => widget.todo.value = widget.todo.value.copyWith(completed: !widget.todo.value.completed),
     );
   }
 }
