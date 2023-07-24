@@ -31,15 +31,23 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void initState() {
     super.initState();
+
+    /// You can register with GetIt in initState to limit the lifespan of your services...
     getIt.registerSingleton<TodoState>(TodoState(rebuildPage: rebuildWidget));
   }
 
   @override
   void dispose() {
     textEditingController.dispose();
+
+    /// ...Just remember to unregister them when you're done (not critical here since the app
+    /// is shutting down, but would be if the service was only suppose to be available when a feature
+    /// was active.
+    getIt.unregister<TodoState>();
     super.dispose();
   }
 
+  /// This call forces the widget to rebuild. Listeners call this when something changes.
   void rebuildWidget() {
     setState(() {});
   }
@@ -71,6 +79,10 @@ class _MyHomePageState extends State<MyHomePage> {
                   itemBuilder: (BuildContext context, int index) {
                     final todo = todoList[index];
                     return TodoRow(
+                      /// Flutter uses keys to know when a widget was swapped. E.g., if the widget is of
+                      /// the same type, Flutter assumes nothing changed and it doesn't re-render.
+                      /// Keys help Flutter know when a change was made. (E.g., when the ListItem was
+                      /// deleted and a new one inserted.)
                       key: UniqueKey(),
                       todo: todo,
                       textEditingController: textEditingController,
@@ -122,6 +134,7 @@ class _TodoRowState extends State<TodoRow> {
     super.dispose();
   }
 
+  /// This call forces the widget to rebuild. Listeners call this when something changes.
   void rebuild() {
     setState(() {});
   }
@@ -138,6 +151,7 @@ class _TodoRowState extends State<TodoRow> {
           children: [
             IconButton(
               onPressed: () {
+                /// ValueNotifiers notify listeners when their `value` property is set, like below.
                 widget.todo.value = widget.todo.value.copyWith(text: widget.textEditingController.text);
               },
               icon: const Icon(Icons.edit),
